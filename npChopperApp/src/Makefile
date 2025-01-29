@@ -17,7 +17,7 @@ DBD += npChopperSupport.dbd
 npChopperSupport_DBD += npChopper.dbd
 
 # source files to be compiled and added to the library
-npChopper_SRCS += driver.cpp
+npChopper_SRCS += npChopperDriver.cpp
 
 # Libraries needed for npChopper
 npChopper_LIBS += asyn

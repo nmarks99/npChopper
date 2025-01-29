@@ -1,4 +1,4 @@
-#include "driver.hpp"
+#include "npChopperDriver.hpp"
 
 #include <epicsExport.h>
 #include <epicsThread.h>
