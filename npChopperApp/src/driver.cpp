@@ -7,6 +7,8 @@
 #include <chrono>
 #include <iostream>
 
+#include "NpChopperLib.h"
+
 static void poll_thread_C(void *pPvt) {
     NPChopper *pNPChopper = (NPChopper *)pPvt;
     pNPChopper->poll();
@@ -21,6 +23,13 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
                      0, 0),
       poll_time_(DEFAULT_POLL_TIME) {
     // Connect to device
+
+    // Discover the device
+    HidDiscover();
+    if (HidGetDeviceCount() < 1) {
+        // printf("Chopper not found\n");
+        throw std::runtime_error("Chopper not found\n");
+    }
 
     epicsThreadCreate("NPChopperPoller", epicsThreadPriorityLow,
                       epicsThreadGetStackSize(epicsThreadStackMedium), (EPICSTHREADFUNC)poll_thread_C, this);
