@@ -1,12 +1,12 @@
-#ifndef _DRIVER_HPP_
-#define _DRIVER_HPP_
-
+#pragma once
 #include <asynPortDriver.h>
 
 #include <chrono>
+#include <string>
 
 constexpr int MAX_CONTROLLERS = 1;
 constexpr double DEFAULT_POLL_TIME = 1.0;  // seconds
+constexpr int IO_BUFFER_SIZE = 256;
 
 class NPChopper : public asynPortDriver {
    public:
@@ -17,6 +17,7 @@ class NPChopper : public asynPortDriver {
 
    private:
     double poll_time_;
+    char in_buff_[IO_BUFFER_SIZE];
+    char out_buff_[IO_BUFFER_SIZE];
+    char device_key_[IO_BUFFER_SIZE];
 };
-
-#endif

@@ -27,9 +27,23 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
     // Discover the device
     HidDiscover();
     if (HidGetDeviceCount() < 1) {
-        // printf("Chopper not found\n");
+        // TODO: dont throw here?
         throw std::runtime_error("Chopper not found\n");
     }
+
+    // Get the device key
+    int n = HidGetDeviceKeys(in_buff_);
+    if (n > 0) {
+        strncpy(device_key_, in_buff_, n);
+    }
+    printf("Device key found: %s\n\n", device_key_);
+
+    // Get device info
+    sprintf(out_buff_, "IDN?");
+    HidWrite(device_key_, out_buff_);
+    printf("Wrote: %s\n", out_buff_);
+    HidRead(device_key_, in_buff_);
+    printf("Recieved: %s\n", in_buff_);
 
     epicsThreadCreate("NPChopperPoller", epicsThreadPriorityLow,
                       epicsThreadGetStackSize(epicsThreadStackMedium), (EPICSTHREADFUNC)poll_thread_C, this);
