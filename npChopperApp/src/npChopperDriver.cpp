@@ -7,7 +7,6 @@
 #include <chrono>
 #include <iostream>
 
-#include "NpChopperLib.h"
 
 static void poll_thread_C(void *pPvt) {
     NPChopper *pNPChopper = (NPChopper *)pPvt;
@@ -22,28 +21,23 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
                      1, /* ASYN_CANBLOCK=0, ASYN_MULTIDEVICE=1, autoConnect=1 */
                      0, 0),
       poll_time_(DEFAULT_POLL_TIME) {
-    // Connect to device
 
-    // Discover the device
+    // Connect to device
+    // TODO: dont throw?
     HidDiscover();
     if (HidGetDeviceCount() < 1) {
-        // TODO: dont throw here?
         throw std::runtime_error("Chopper not found\n");
     }
-
-    // Get the device key
     int n = HidGetDeviceKeys(in_buff_);
-    if (n > 0) {
-        strncpy(device_key_, in_buff_, n);
+    if (n < 0) {
+        throw std::runtime_error("Chopper device key not found\n");
     }
+    strncpy(device_key_, in_buff_, IO_BUFFER_SIZE);
     printf("Device key found: %s\n\n", device_key_);
 
     // Get device info
-    sprintf(out_buff_, "IDN?");
-    HidWrite(device_key_, out_buff_);
-    printf("Wrote: %s\n", out_buff_);
-    HidRead(device_key_, in_buff_);
-    printf("Recieved: %s\n", in_buff_);
+    writeReadController("IDN?");
+    printf("Device Identity: %s\n", in_buff_);
 
     epicsThreadCreate("NPChopperPoller", epicsThreadPriorityLow,
                       epicsThreadGetStackSize(epicsThreadStackMedium), (EPICSTHREADFUNC)poll_thread_C, this);
