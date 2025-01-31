@@ -24,6 +24,11 @@ npChopper_LIBS += asyn
 npChopper_LIBS += NPChopperLib
 npChopper_LIBS += $(EPICS_BASE_IOC_LIBS)
 
+# build and install npChopperTest
+PROD += npChopperTerm
+npChopperTerm_SRCS = npChopperTerm.cpp
+npChopperTerm_LIBS = NPChopperLib
+
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
