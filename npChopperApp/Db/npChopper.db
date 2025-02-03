@@ -1,0 +1,27 @@
+record(ai, "$(P)FreqSyncRBV")
+{
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_SYNC_IN")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)FreqOuterRBV")
+{
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUTER_IN")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)FreqOut1RBV")
+{
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT1_IN")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)FreqOut2RBV")
+{
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT2_IN")
+    field(SCAN, "I/O Intr")
+}

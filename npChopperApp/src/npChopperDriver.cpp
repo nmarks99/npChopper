@@ -7,7 +7,6 @@
 #include <chrono>
 #include <iostream>
 
-
 static void poll_thread_C(void *pPvt) {
     NPChopper *pNPChopper = (NPChopper *)pPvt;
     pNPChopper->poll();
@@ -22,8 +21,8 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
                      0, 0),
       poll_time_(DEFAULT_POLL_TIME) {
 
-    // Connect to device
-    // TODO: dont throw?
+    // Connect to device, panic if not found
+    HidSetLogging(true);
     HidDiscover();
     if (HidGetDeviceCount() < 1) {
         throw std::runtime_error("Chopper not found\n");
@@ -33,7 +32,16 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
         throw std::runtime_error("Chopper device key not found\n");
     }
     strncpy(device_key_, in_buff_, IO_BUFFER_SIZE);
-    printf("Device key found: %s\n\n", device_key_);
+    
+    // Create asyn params
+    createParam(FREQ_SYNC_IN_STRING, asynParamFloat64, &freqSyncInIndex_);
+    createParam(FREQ_OUTER_IN_STRING, asynParamFloat64, &freqOuterInIndex_);
+    createParam(FREQ_OUT1_IN_STRING, asynParamFloat64, &freqOut1InIndex_);
+    createParam(FREQ_OUT2_IN_STRING, asynParamFloat64, &freqOut2InIndex_);
+    createParam(FREQ_SYNC_OUT_STRING, asynParamFloat64, &freqSyncOutIndex_);
+    createParam(FREQ_OUTER_OUT_STRING, asynParamFloat64, &freqOuterOutIndex_);
+    createParam(FREQ_OUT1_OUT_STRING, asynParamFloat64, &freqOut1OutIndex_);
+    createParam(FREQ_OUT2_OUT_STRING, asynParamFloat64, &freqOut2OutIndex_);
 
     // Get device info
     writeReadController("IDN?");
@@ -44,10 +52,29 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
 }
 
 void NPChopper::poll() {
+    double double_val = 0.0;
     while (true) {
         lock();
 
-        printf("Hello\n");
+        writeReadController("FR1?");
+        in_string_.erase(0, 3); 
+        double_val = std::stof(in_string_);
+        setDoubleParam(freqSyncInIndex_, double_val);
+
+        writeReadController("FR2?");
+        in_string_.erase(0, 3); 
+        double_val = std::stof(in_string_);
+        setDoubleParam(freqOuterInIndex_, double_val);
+
+        writeReadController("FR3?");
+        in_string_.erase(0, 3); 
+        double_val = std::stof(in_string_);
+        setDoubleParam(freqOut1InIndex_, double_val);
+
+        writeReadController("FR4?");
+        in_string_.erase(0, 3); 
+        double_val = std::stof(in_string_);
+        setDoubleParam(freqOut2InIndex_, double_val);
 
         callParamCallbacks();
         unlock();

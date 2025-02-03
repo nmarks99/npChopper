@@ -6,7 +6,8 @@ iocchopperExWin64_registerRecordDeviceDriver(pdbbase)
 
 < settings.iocsh
 
-NPChopperConfig("asyn_port", "dev_port")
+NPChopperConfig("NpChopperAsyn", "NpChopper1")
+dbLoadRecords("$(NPCHOPPER)/db/npChopper.db", "P=$(PREFIX), PORT=NpChopperAsyn")
 
 ###############################################################################
 iocInit
