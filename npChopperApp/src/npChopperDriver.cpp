@@ -7,6 +7,29 @@
 #include <chrono>
 #include <iostream>
 
+bool NPChopper::writeReadController(const char *msg) {
+    snprintf(out_buff_, IO_BUFFER_SIZE, msg);
+    bool status_ok = HidQuery(device_key_, out_buff_, in_buff_);
+    in_string_ = in_buff_;
+    return status_ok;
+}
+
+std::optional<double> NPChopper::parseReply() {
+    if (in_string_.length() < 3) {
+        return std::nullopt;
+    }
+    in_string_.erase(0, 3);
+    double value = 0.0;
+    try {
+        value = std::stof(in_string_);
+        return value;
+    } catch (const std::exception &e) {
+        std::cout << e.what() << std::endl; // TODO: use asynPrint
+        return std::nullopt;
+    }
+
+}
+
 static void poll_thread_C(void *pPvt) {
     NPChopper *pNPChopper = (NPChopper *)pPvt;
     pNPChopper->poll();
@@ -22,7 +45,7 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
       poll_time_(DEFAULT_POLL_TIME) {
 
     // Connect to device, panic if not found
-    HidSetLogging(true);
+    // HidSetLogging(true);
     HidDiscover();
     if (HidGetDeviceCount() < 1) {
         throw std::runtime_error("Chopper not found\n");
@@ -52,29 +75,49 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
 }
 
 void NPChopper::poll() {
-    double double_val = 0.0;
+    std::optional<double> retval;
+    bool comm_ok = true;
     while (true) {
         lock();
 
+        comm_ok = true;
+
         writeReadController("FR1?");
-        in_string_.erase(0, 3); 
-        double_val = std::stof(in_string_);
-        setDoubleParam(freqSyncInIndex_, double_val);
+        retval = parseReply();
+        if (retval.has_value()) {
+            setDoubleParam(freqSyncInIndex_, retval.value());
+        } else {
+            comm_ok = false;
+        }
 
         writeReadController("FR2?");
-        in_string_.erase(0, 3); 
-        double_val = std::stof(in_string_);
-        setDoubleParam(freqOuterInIndex_, double_val);
+        retval = parseReply();
+        if (retval.has_value()) {
+            setDoubleParam(freqOuterInIndex_, retval.value());
+        } else {
+            comm_ok = false;
+        }
 
         writeReadController("FR3?");
-        in_string_.erase(0, 3); 
-        double_val = std::stof(in_string_);
-        setDoubleParam(freqOut1InIndex_, double_val);
+        retval = parseReply();
+        if (retval.has_value()) {
+            setDoubleParam(freqOut1InIndex_, retval.value());
+        } else {
+            comm_ok = false;
+        }
 
         writeReadController("FR4?");
-        in_string_.erase(0, 3); 
-        double_val = std::stof(in_string_);
-        setDoubleParam(freqOut2InIndex_, double_val);
+        retval = parseReply();
+        if (retval.has_value()) {
+            setDoubleParam(freqOut2InIndex_, retval.value());
+        } else {
+            comm_ok = false;
+        }
+
+        if (!comm_ok) {
+            // create and set asyn parameter to indicate a comm error
+            printf("Communication error\n");
+        }
 
         callParamCallbacks();
         unlock();

@@ -29,6 +29,9 @@ PROD += npChopperTerm
 npChopperTerm_SRCS = npChopperTerm.cpp
 npChopperTerm_LIBS = NPChopperLib
 
+# Force C++17 so we can use things like std::optional
+USR_CXXFLAGS_WIN32 += /std:c++17
+
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
