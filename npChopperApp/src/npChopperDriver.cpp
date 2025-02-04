@@ -8,20 +8,32 @@
 #include <iostream>
 
 bool NPChopper::writeReadController(const char *msg) {
-    snprintf(out_buff_, IO_BUFFER_SIZE, msg);
+    snprintf(out_buff_, IO_BUFFER_SIZE, "%s", msg);
     bool status_ok = HidQuery(device_key_, out_buff_, in_buff_);
-    in_string_ = in_buff_;
     return status_ok;
 }
 
-std::optional<double> NPChopper::parseReply() {
-    if (in_string_.length() < 3) {
+bool NPChopper::writeController(const char *msg) {
+    snprintf(out_buff_, IO_BUFFER_SIZE, "%s", msg);
+    bool status_ok = HidWrite(device_key_, out_buff_);
+    return status_ok;
+}
+
+bool NPChopper::writeController() {
+    bool status_ok = HidWrite(device_key_, out_buff_);
+    return status_ok;
+}
+
+std::optional<double> NPChopper::parseReply() const {
+    std::string in_string = in_buff_;
+    if (in_string.length() < 3) {
         return std::nullopt;
     }
-    in_string_.erase(0, 3);
+
+    in_string.erase(0, 3);
     double value = 0.0;
     try {
-        value = std::stof(in_string_);
+        value = std::stof(in_string);
         return value;
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl; // TODO: use asynPrint
@@ -44,8 +56,8 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
                      0, 0),
       poll_time_(DEFAULT_POLL_TIME) {
 
+    // HidSetLogging(true); // logs messages to ChopperLib.txt
     // Connect to device, panic if not found
-    // HidSetLogging(true);
     HidDiscover();
     if (HidGetDeviceCount() < 1) {
         throw std::runtime_error("Chopper not found\n");
@@ -57,14 +69,11 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
     strncpy(device_key_, in_buff_, IO_BUFFER_SIZE);
     
     // Create asyn params
-    createParam(FREQ_SYNC_IN_STRING, asynParamFloat64, &freqSyncInIndex_);
-    createParam(FREQ_OUTER_IN_STRING, asynParamFloat64, &freqOuterInIndex_);
-    createParam(FREQ_OUT1_IN_STRING, asynParamFloat64, &freqOut1InIndex_);
-    createParam(FREQ_OUT2_IN_STRING, asynParamFloat64, &freqOut2InIndex_);
-    createParam(FREQ_SYNC_OUT_STRING, asynParamFloat64, &freqSyncOutIndex_);
-    createParam(FREQ_OUTER_OUT_STRING, asynParamFloat64, &freqOuterOutIndex_);
-    createParam(FREQ_OUT1_OUT_STRING, asynParamFloat64, &freqOut1OutIndex_);
-    createParam(FREQ_OUT2_OUT_STRING, asynParamFloat64, &freqOut2OutIndex_);
+    createParam(FREQ_SYNC_STRING, asynParamFloat64, &freqSyncIndex_);
+    createParam(FREQ_OUTER_STRING, asynParamFloat64, &freqOuterIndex_);
+    createParam(FREQ_OUT1_STRING, asynParamFloat64, &freqOut1Index_);
+    createParam(FREQ_OUT2_STRING, asynParamFloat64, &freqOut2Index_);
+    createParam(HARMONIC_MULT_STRING, asynParamInt32, &harmonicMultIndex_);
 
     // Get device info
     writeReadController("IDN?");
@@ -82,34 +91,42 @@ void NPChopper::poll() {
 
         comm_ok = true;
 
-        writeReadController("FR1?");
+        comm_ok = writeReadController("FR1?");
         retval = parseReply();
-        if (retval.has_value()) {
-            setDoubleParam(freqSyncInIndex_, retval.value());
+        if (retval.has_value() && comm_ok) {
+            setDoubleParam(freqSyncIndex_, retval.value());
         } else {
             comm_ok = false;
         }
 
-        writeReadController("FR2?");
+        comm_ok = writeReadController("FR2?");
         retval = parseReply();
-        if (retval.has_value()) {
-            setDoubleParam(freqOuterInIndex_, retval.value());
+        if (retval.has_value() && comm_ok) {
+            setDoubleParam(freqOuterIndex_, retval.value());
         } else {
             comm_ok = false;
         }
 
-        writeReadController("FR3?");
+        comm_ok = writeReadController("FR3?");
         retval = parseReply();
-        if (retval.has_value()) {
-            setDoubleParam(freqOut1InIndex_, retval.value());
+        if (retval.has_value() && comm_ok) {
+            setDoubleParam(freqOut1Index_, retval.value());
         } else {
             comm_ok = false;
         }
 
-        writeReadController("FR4?");
+        comm_ok = writeReadController("FR4?");
         retval = parseReply();
-        if (retval.has_value()) {
-            setDoubleParam(freqOut2InIndex_, retval.value());
+        if (retval.has_value() && comm_ok) {
+            setDoubleParam(freqOut2Index_, retval.value());
+        } else {
+            comm_ok = false;
+        }
+
+        comm_ok = writeReadController("HAR?");
+        retval = parseReply();
+        if (retval.has_value() && comm_ok) {
+            setIntegerParam(harmonicMultIndex_, static_cast<int>(retval.value()));
         } else {
             comm_ok = false;
         }
@@ -123,6 +140,39 @@ void NPChopper::poll() {
         unlock();
         epicsThreadSleep(poll_time_);
     }
+}
+
+asynStatus NPChopper::writeInt32(asynUser *pasynUser, epicsInt32 value) {
+    int function = pasynUser->reason;
+    asynStatus asyn_status = asynStatus::asynSuccess;
+
+    if (function == harmonicMultIndex_) {
+        printf("Setting H = %ld\n", value);
+        snprintf(out_buff_, IO_BUFFER_SIZE, "HAR%d", value);
+        writeController();
+    }
+
+    callParamCallbacks();
+    return asyn_status;
+}
+
+
+asynStatus NPChopper::writeFloat64(asynUser *pasynUser, epicsFloat64 value) {
+    int function = pasynUser->reason;
+    asynStatus asyn_status = asynStatus::asynSuccess;
+
+    // if (function == freqSyncOutIndex_) {
+    //     printf("Setting Sync = %lf\n", value);
+    // } else if ( function == freqOuterOutIndex_) {
+    //     printf("Setting Outer = %lf\n", value);
+    // } else if ( function == freqOut1OutIndex_) {
+    //     printf("Setting Out1 = %lf\n", value);
+    // } else if ( function == freqOut2OutIndex_) {
+    //     printf("Setting Out2 = %lf\n", value);
+    // }
+
+    callParamCallbacks();
+    return asyn_status;
 }
 
 // register function for iocsh

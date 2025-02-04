@@ -1,27 +1,36 @@
-record(ai, "$(P)FreqSyncRBV")
-{
+record(ai, "$(P)FreqSync") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_SYNC_IN")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_SYNC")
     field(SCAN, "I/O Intr")
 }
 
-record(ai, "$(P)FreqOuterRBV")
-{
+record(ai, "$(P)FreqOuter") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUTER_IN")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUTER")
     field(SCAN, "I/O Intr")
 }
 
-record(ai, "$(P)FreqOut1RBV")
-{
+record(ai, "$(P)FreqOut1") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT1_IN")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT1")
     field(SCAN, "I/O Intr")
 }
 
-record(ai, "$(P)FreqOut2RBV")
-{
+record(ai, "$(P)FreqOut2") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT2_IN")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT2")
     field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)HarmonicMult") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HARMONIC_MULT")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)HarmonicMultSet") {
+    field(DTYP, "asynInt32")
+    field(DRVH, 15)
+    field(DRVL, 1)
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HARMONIC_MULT")
 }

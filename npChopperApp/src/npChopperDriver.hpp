@@ -8,24 +8,21 @@
 #include "NpChopperLib.h"
 
 constexpr int MAX_CONTROLLERS = 1;
-constexpr double DEFAULT_POLL_TIME = 1.0;  // seconds
-constexpr int IO_BUFFER_SIZE = 256;
+constexpr double DEFAULT_POLL_TIME = 0.2;  // seconds
+constexpr int IO_BUFFER_SIZE = MAXBUFLEN;
 
-static constexpr char FREQ_SYNC_IN_STRING[] = "FREQ_SYNC_IN";
-static constexpr char FREQ_OUTER_IN_STRING[] = "FREQ_OUTER_IN";
-static constexpr char FREQ_OUT1_IN_STRING[] = "FREQ_OUT1_IN";
-static constexpr char FREQ_OUT2_IN_STRING[] = "FREQ_OUT2_IN";
-
-static constexpr char FREQ_SYNC_OUT_STRING[] = "FREQ_SYNC_OUT";
-static constexpr char FREQ_OUTER_OUT_STRING[] = "FREQ_OUTER_OUT";
-static constexpr char FREQ_OUT1_OUT_STRING[] = "FREQ_OUT1_OUT";
-static constexpr char FREQ_OUT2_OUT_STRING[] = "FREQ_OUT2_OUT";
+static constexpr char FREQ_SYNC_STRING[] = "FREQ_SYNC";
+static constexpr char FREQ_OUTER_STRING[] = "FREQ_OUTER";
+static constexpr char FREQ_OUT1_STRING[] = "FREQ_OUT1";
+static constexpr char FREQ_OUT2_STRING[] = "FREQ_OUT2";
+static constexpr char HARMONIC_MULT_STRING[] = "HARMONIC_MULT";
 
 class NPChopper : public asynPortDriver {
    public:
     NPChopper(const char *asyn_port, const char *usb_port);
     virtual void poll(void);
-    // virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
+    virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
+    virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
     // virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual);
 
    private:
@@ -33,24 +30,24 @@ class NPChopper : public asynPortDriver {
     char in_buff_[IO_BUFFER_SIZE];
     char out_buff_[IO_BUFFER_SIZE];
     char device_key_[IO_BUFFER_SIZE];
-    std::string in_string_;
 
-    // Writes the message to the controller, reads the response
+    // Writes msg to the controller, reads the response into in_buff_
     bool writeReadController(const char *msg);
 
-    // Parses reply stored in in_string_ and attempts to convert to a double
-    // TODO: maybe better to make const and do not modify in_string_
-    std::optional<double> parseReply();
+    // Writes msg to the controller
+    bool writeController(const char *msg);
+
+    // Writes out_buff_ to the controller
+    bool writeController();
+
+    // Parses reply stored in in_buff_ and attempts to convert to a double
+    std::optional<double> parseReply() const;
 
 
    protected:
-    int freqSyncInIndex_;
-    int freqOuterInIndex_;
-    int freqOut1InIndex_;
-    int freqOut2InIndex_;
-
-    int freqSyncOutIndex_;
-    int freqOuterOutIndex_;
-    int freqOut1OutIndex_;
-    int freqOut2OutIndex_;
+    int freqSyncIndex_;
+    int freqOuterIndex_;
+    int freqOut1Index_;
+    int freqOut2Index_;
+    int harmonicMultIndex_;
 };
