@@ -1,3 +1,9 @@
+record(bi, "$(P)Connected") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))CONNECTED")
+    field(SCAN, "I/O Intr")
+}
+
 record(longin, "$(P)FreqSync") {
     field(DTYP, "asynInt32")
     field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_SYNC_MEASURE")
@@ -24,7 +30,7 @@ record(longin, "$(P)FreqOut2") {
 
 record(longin, "$(P)HarmonicMult") {
     field(DTYP, "asynInt32")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HARMONIC_MULT")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HARMONIC")
     field(SCAN, "I/O Intr")
 }
 
@@ -32,7 +38,20 @@ record(longout, "$(P)HarmonicMultSet") {
     field(DTYP, "asynInt32")
     field(DRVH, 15)
     field(DRVL, 1)
-    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HARMONIC_MULT")
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HARMONIC")
+}
+
+record(longin, "$(P)SubHarmonic") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))SUB_HARMONIC")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)SubHarmonicSet") {
+    field(DTYP, "asynInt32")
+    field(DRVH, 15)
+    field(DRVL, 1)
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))SUB_HARMONIC")
 }
 
 record(longin, "$(P)Frequency") {
@@ -44,4 +63,93 @@ record(longin, "$(P)Frequency") {
 record(longout, "$(P)FrequencySet") {
     field(DTYP, "asynInt32")
     field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQUENCY")
+}
+
+record(ai, "$(P)PhaseDelay") {
+    field(DTYP, "asynFloat64")
+    field(PREC, 1)
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))PHASE_DELAY")
+    field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)PhaseDelaySet") {
+    field(DTYP, "asynFloat64")
+    field(PREC, 1)
+    field(DRVH, 179)
+    field(DRVL, -180)
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))PHASE_DELAY")
+}
+
+record(longin, "$(P)Wheel") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))WHEEL")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)WheelSetValue") {
+    field(DTYP, "asynInt32")
+    field(DRVL, 0)
+    field(DRVH, 4)
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))WHEEL")
+}
+
+record(mbbo, "$(P)WheelSet") {
+    field(ZRST, "60")
+    field(ONST, "42/30")
+    field(TWST, "7/5")
+    field(THST, "2")
+    field(FRST, "100")
+    field(OUT, "$(P)WheelSetValue PP")
+}
+
+record(longin, "$(P)SyncSource") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))SYNC_SOURCE")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)SyncSourceSetValue") {
+    field(DTYP, "asynInt32")
+    field(DRVL, 0)
+    field(DRVH, 3)
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))SYNC_SOURCE")
+}
+
+record(mbbo, "$(P)SyncSourceSet") {
+    field(ZRST, "Vext")
+    field(ONST, "EXT+")
+    field(TWST, "EXT-")
+    field(THST, "INT")
+    field(OUT, "$(P)SyncSourceSetValue PP")
+}
+
+record(longin, "$(P)Mode") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))MODE")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)ModeSetValue") {
+    field(DTYP, "asynInt32")
+    field(DRVL, 0)
+    field(DRVH, 2)
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))MODE")
+}
+
+record(mbbo, "$(P)ModeSet") {
+    field(ZRST, "H/S")
+    field(ONST, "+/-")
+    field(TWST, "Normal")
+    field(OUT, "$(P)ModeSetValue PP")
+}
+
+record(seq, "$(P)set_current_values") {
+    field(PINI, 1)
+    field(DLY0, 1)
+    field(DOL0, "$(P)Wheel.VAL")
+    field(LNK0, "$(P)WheelSet CP")
+    field(DOL1, "$(P)SyncSource.VAL")
+    field(LNK1, "$(P)SyncSourceSet CP")
+    field(DOL2, "$(P)Mode.VAL")
+    field(LNK2, "$(P)ModeSet CP")
 }

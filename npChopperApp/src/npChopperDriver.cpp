@@ -26,20 +26,36 @@ bool NPChopper::writeController() {
 
 std::optional<int> NPChopper::parseReply() const {
     std::string in_string = in_buff_;
-    if (in_string.length() < 3) {
+    if (in_string.length() < RETURN_CMD_LENGTH) {
         return std::nullopt;
     }
 
-    in_string.erase(0, 3);
+    in_string.erase(0, RETURN_CMD_LENGTH);
     int value = 0;
     try {
         value = std::stoi(in_string);
         return value;
     } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl; // TODO: use asynPrint
+        printf("%s\n", e.what());
+        return std::nullopt;
+    }
+}
+
+std::optional<double> NPChopper::parseReplyDouble() const {
+    std::string in_string = in_buff_;
+    if (in_string.length() < RETURN_CMD_LENGTH) {
         return std::nullopt;
     }
 
+    in_string.erase(0, RETURN_CMD_LENGTH);
+    double value = 0.0;
+    try {
+        value = std::stof(in_string);
+        return value;
+    } catch (const std::exception &e) {
+        printf("%s\n", e.what());
+        return std::nullopt;
+    }
 }
 
 static void poll_thread_C(void *pPvt) {
@@ -69,12 +85,18 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
     strncpy(device_key_, in_buff_, IO_BUFFER_SIZE);
     
     // Create asyn params
+    createParam(CONNECTED_STRING, asynParamInt32, &connectedIndex_);
     createParam(FREQ_SYNC_MEASURE_STRING, asynParamInt32, &freqSyncMeasureIndex_);
     createParam(FREQ_OUTER_MEASURE_STRING, asynParamInt32, &freqOuterMeasureIndex_);
     createParam(FREQ_OUT1_MEASURE_STRING, asynParamInt32, &freqOut1MeasureIndex_);
     createParam(FREQ_OUT2_MEASURE_STRING, asynParamInt32, &freqOut2MeasureIndex_);
-    createParam(HARMONIC_MULT_STRING, asynParamInt32, &harmonicMultIndex_);
+    createParam(HARMONIC_STRING, asynParamInt32, &harmonicIndex_);
+    createParam(SUB_HARMONIC_STRING, asynParamInt32, &subHarmonicIndex_);
     createParam(FREQUENCY_STRING, asynParamInt32, &frequencyIndex_);
+    createParam(WHEEL_STRING, asynParamInt32, &wheelIndex_);
+    createParam(SYNC_SOURCE_STRING, asynParamInt32, &syncSourceIndex_);
+    createParam(MODE_STRING, asynParamInt32, &modeIndex_);
+    createParam(PHASE_DELAY_STRING, asynParamFloat64, &phaseDelayIndex_);
 
     // Get device info
     writeReadController("IDN?");
@@ -86,11 +108,13 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
 
 void NPChopper::poll() {
     std::optional<int> retval;
+    std::optional<double> retval_double;
     bool comm_ok = true;
     while (true) {
         lock();
 
         comm_ok = true;
+
         comm_ok = writeReadController("FR1?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
@@ -126,7 +150,15 @@ void NPChopper::poll() {
         comm_ok = writeReadController("HAR?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setIntegerParam(harmonicMultIndex_, retval.value());
+            setIntegerParam(harmonicIndex_, retval.value());
+        } else {
+            comm_ok = false;
+        }
+
+        comm_ok = writeReadController("SUB?");
+        retval = parseReply();
+        if (retval.has_value() && comm_ok) {
+            setIntegerParam(subHarmonicIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -139,10 +171,45 @@ void NPChopper::poll() {
             comm_ok = false;
         }
 
-        if (!comm_ok) {
-            // create and set asyn parameter to indicate a comm error
-            printf("Communication error\n");
+        comm_ok = writeReadController("WHL?");
+        retval = parseReply();
+        if (retval.has_value() && comm_ok) {
+            setIntegerParam(wheelIndex_, retval.value());
+        } else {
+            comm_ok = false;
         }
+
+        comm_ok = writeReadController("SYN?");
+        retval = parseReply();
+        if (retval.has_value() && comm_ok) {
+            setIntegerParam(syncSourceIndex_, retval.value());
+        } else {
+            comm_ok = false;
+        }
+        
+        comm_ok = writeReadController("MOD?");
+        retval = parseReply();
+        if (retval.has_value() && comm_ok) {
+            setIntegerParam(modeIndex_, retval.value());
+        } else {
+            comm_ok = false;
+        }
+
+        // only phase delay query replies with a floating point number
+        comm_ok = writeReadController("PHS?");
+        retval_double = parseReplyDouble();
+        if (retval_double.has_value() && comm_ok) {
+            setDoubleParam(phaseDelayIndex_, retval_double.value());
+        } else {
+            comm_ok = false;
+        }
+
+        if (comm_ok) {
+            setIntegerParam(connectedIndex_, 1);
+        } else {
+            setIntegerParam(connectedIndex_, 0);
+        }
+
 
         callParamCallbacks();
         unlock();
@@ -152,37 +219,48 @@ void NPChopper::poll() {
 
 asynStatus NPChopper::writeInt32(asynUser *pasynUser, epicsInt32 value) {
     int function = pasynUser->reason;
-    asynStatus asyn_status = asynStatus::asynSuccess;
+    bool comm_ok = true;
 
-    if (function == harmonicMultIndex_) {
+    if (function == harmonicIndex_) {
         snprintf(out_buff_, IO_BUFFER_SIZE, "HAR%d", value);
-        writeController();
+        comm_ok = writeController();
+    } else if (function == subHarmonicIndex_) {
+        snprintf(out_buff_, IO_BUFFER_SIZE, "SUB%d", value);
+        comm_ok = writeController();
     } else if (function == frequencyIndex_) {
         snprintf(out_buff_, IO_BUFFER_SIZE, "OSC%d", value*100);
-        writeController();
+        comm_ok = writeController();
+    } else if (function == wheelIndex_) {
+        snprintf(out_buff_, IO_BUFFER_SIZE, "WHL%d", value);
+        comm_ok = writeController();
+    } else if (function == syncSourceIndex_) {
+        snprintf(out_buff_, IO_BUFFER_SIZE, "SYN%d", value);
+        comm_ok = writeController();
+    } else if (function == modeIndex_) {
+        snprintf(out_buff_, IO_BUFFER_SIZE, "MOD%d", value);
+        comm_ok = writeController();
     }
 
-    callParamCallbacks();
-    return asyn_status;
-}
-
-
-asynStatus NPChopper::writeFloat64(asynUser *pasynUser, epicsFloat64 value) {
-    int function = pasynUser->reason;
-    asynStatus asyn_status = asynStatus::asynSuccess;
-
-    // if (function == freqSyncMeasureOutIndex_) {
-    //     printf("Setting Sync = %lf\n", value);
-    // } else if ( function == freqOuterMeasureOutIndex_) {
-    //     printf("Setting Outer = %lf\n", value);
-    // } else if ( function == freqOut1MeasureOutIndex_) {
-    //     printf("Setting Out1 = %lf\n", value);
-    // } else if ( function == freqOut2MeasureOutIndex_) {
-    //     printf("Setting Out2 = %lf\n", value);
+    // else if (function == phaseDelayIndex_) {
+    //     snprintf(out_buff_, IO_BUFFER_SIZE, "PHS%d", value);
+    //     comm_ok = writeController();
     // }
 
     callParamCallbacks();
-    return asyn_status;
+    return comm_ok ? asynSuccess : asynError;
+}
+
+asynStatus NPChopper::writeFloat64(asynUser *pasynUser, epicsFloat64 value) {
+    int function = pasynUser->reason;
+    bool comm_ok = true;
+
+    if (function == phaseDelayIndex_) {
+        snprintf(out_buff_, IO_BUFFER_SIZE, "PHS%d", static_cast<int>(value*10.0));
+        comm_ok = writeController();
+    }
+
+    callParamCallbacks();
+    return comm_ok ? asynSuccess : asynError;
 }
 
 // register function for iocsh
