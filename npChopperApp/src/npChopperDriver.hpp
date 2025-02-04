@@ -42,7 +42,7 @@ class NPChopper : public asynPortDriver {
     bool writeController();
 
     // Parses reply stored in in_buff_ and attempts to convert to a double
-    std::optional<double> parseReply() const;
+    std::optional<int> parseReply() const;
 
 
    protected:

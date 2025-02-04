@@ -24,16 +24,16 @@ bool NPChopper::writeController() {
     return status_ok;
 }
 
-std::optional<double> NPChopper::parseReply() const {
+std::optional<int> NPChopper::parseReply() const {
     std::string in_string = in_buff_;
     if (in_string.length() < 3) {
         return std::nullopt;
     }
 
     in_string.erase(0, 3);
-    double value = 0.0;
+    int value = 0;
     try {
-        value = std::stof(in_string);
+        value = std::stoi(in_string);
         return value;
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl; // TODO: use asynPrint
@@ -69,10 +69,10 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
     strncpy(device_key_, in_buff_, IO_BUFFER_SIZE);
     
     // Create asyn params
-    createParam(FREQ_SYNC_MEASURE_STRING, asynParamFloat64, &freqSyncMeasureIndex_);
-    createParam(FREQ_OUTER_MEASURE_STRING, asynParamFloat64, &freqOuterMeasureIndex_);
-    createParam(FREQ_OUT1_MEASURE_STRING, asynParamFloat64, &freqOut1MeasureIndex_);
-    createParam(FREQ_OUT2_MEASURE_STRING, asynParamFloat64, &freqOut2MeasureIndex_);
+    createParam(FREQ_SYNC_MEASURE_STRING, asynParamInt32, &freqSyncMeasureIndex_);
+    createParam(FREQ_OUTER_MEASURE_STRING, asynParamInt32, &freqOuterMeasureIndex_);
+    createParam(FREQ_OUT1_MEASURE_STRING, asynParamInt32, &freqOut1MeasureIndex_);
+    createParam(FREQ_OUT2_MEASURE_STRING, asynParamInt32, &freqOut2MeasureIndex_);
     createParam(HARMONIC_MULT_STRING, asynParamInt32, &harmonicMultIndex_);
     createParam(FREQUENCY_STRING, asynParamInt32, &frequencyIndex_);
 
@@ -85,17 +85,16 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
 }
 
 void NPChopper::poll() {
-    std::optional<double> retval;
+    std::optional<int> retval;
     bool comm_ok = true;
     while (true) {
         lock();
 
         comm_ok = true;
-
         comm_ok = writeReadController("FR1?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqSyncMeasureIndex_, retval.value());
+            setIntegerParam(freqSyncMeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -103,7 +102,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("FR2?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqOuterMeasureIndex_, retval.value());
+            setIntegerParam(freqOuterMeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -111,7 +110,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("FR3?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqOut1MeasureIndex_, retval.value());
+            setIntegerParam(freqOut1MeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -119,7 +118,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("FR4?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqOut2MeasureIndex_, retval.value());
+            setIntegerParam(freqOut2MeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -127,7 +126,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("HAR?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setIntegerParam(harmonicMultIndex_, static_cast<int>(retval.value()));
+            setIntegerParam(harmonicMultIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -135,7 +134,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("OSC?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setIntegerParam(frequencyIndex_, static_cast<int>(retval.value()));
+            setIntegerParam(frequencyIndex_, retval.value());
         } else {
             comm_ok = false;
         }
