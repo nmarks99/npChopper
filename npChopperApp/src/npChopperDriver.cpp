@@ -69,11 +69,12 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
     strncpy(device_key_, in_buff_, IO_BUFFER_SIZE);
     
     // Create asyn params
-    createParam(FREQ_SYNC_STRING, asynParamFloat64, &freqSyncIndex_);
-    createParam(FREQ_OUTER_STRING, asynParamFloat64, &freqOuterIndex_);
-    createParam(FREQ_OUT1_STRING, asynParamFloat64, &freqOut1Index_);
-    createParam(FREQ_OUT2_STRING, asynParamFloat64, &freqOut2Index_);
+    createParam(FREQ_SYNC_MEASURE_STRING, asynParamFloat64, &freqSyncMeasureIndex_);
+    createParam(FREQ_OUTER_MEASURE_STRING, asynParamFloat64, &freqOuterMeasureIndex_);
+    createParam(FREQ_OUT1_MEASURE_STRING, asynParamFloat64, &freqOut1MeasureIndex_);
+    createParam(FREQ_OUT2_MEASURE_STRING, asynParamFloat64, &freqOut2MeasureIndex_);
     createParam(HARMONIC_MULT_STRING, asynParamInt32, &harmonicMultIndex_);
+    createParam(FREQUENCY_STRING, asynParamInt32, &frequencyIndex_);
 
     // Get device info
     writeReadController("IDN?");
@@ -94,7 +95,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("FR1?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqSyncIndex_, retval.value());
+            setDoubleParam(freqSyncMeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -102,7 +103,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("FR2?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqOuterIndex_, retval.value());
+            setDoubleParam(freqOuterMeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -110,7 +111,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("FR3?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqOut1Index_, retval.value());
+            setDoubleParam(freqOut1MeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -118,7 +119,7 @@ void NPChopper::poll() {
         comm_ok = writeReadController("FR4?");
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
-            setDoubleParam(freqOut2Index_, retval.value());
+            setDoubleParam(freqOut2MeasureIndex_, retval.value());
         } else {
             comm_ok = false;
         }
@@ -127,6 +128,14 @@ void NPChopper::poll() {
         retval = parseReply();
         if (retval.has_value() && comm_ok) {
             setIntegerParam(harmonicMultIndex_, static_cast<int>(retval.value()));
+        } else {
+            comm_ok = false;
+        }
+
+        comm_ok = writeReadController("OSC?");
+        retval = parseReply();
+        if (retval.has_value() && comm_ok) {
+            setIntegerParam(frequencyIndex_, static_cast<int>(retval.value()));
         } else {
             comm_ok = false;
         }
@@ -147,8 +156,10 @@ asynStatus NPChopper::writeInt32(asynUser *pasynUser, epicsInt32 value) {
     asynStatus asyn_status = asynStatus::asynSuccess;
 
     if (function == harmonicMultIndex_) {
-        printf("Setting H = %ld\n", value);
         snprintf(out_buff_, IO_BUFFER_SIZE, "HAR%d", value);
+        writeController();
+    } else if (function == frequencyIndex_) {
+        snprintf(out_buff_, IO_BUFFER_SIZE, "OSC%d", value*100);
         writeController();
     }
 
@@ -161,13 +172,13 @@ asynStatus NPChopper::writeFloat64(asynUser *pasynUser, epicsFloat64 value) {
     int function = pasynUser->reason;
     asynStatus asyn_status = asynStatus::asynSuccess;
 
-    // if (function == freqSyncOutIndex_) {
+    // if (function == freqSyncMeasureOutIndex_) {
     //     printf("Setting Sync = %lf\n", value);
-    // } else if ( function == freqOuterOutIndex_) {
+    // } else if ( function == freqOuterMeasureOutIndex_) {
     //     printf("Setting Outer = %lf\n", value);
-    // } else if ( function == freqOut1OutIndex_) {
+    // } else if ( function == freqOut1MeasureOutIndex_) {
     //     printf("Setting Out1 = %lf\n", value);
-    // } else if ( function == freqOut2OutIndex_) {
+    // } else if ( function == freqOut2MeasureOutIndex_) {
     //     printf("Setting Out2 = %lf\n", value);
     // }
 

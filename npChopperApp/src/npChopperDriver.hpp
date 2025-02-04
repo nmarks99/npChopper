@@ -11,11 +11,12 @@ constexpr int MAX_CONTROLLERS = 1;
 constexpr double DEFAULT_POLL_TIME = 0.2;  // seconds
 constexpr int IO_BUFFER_SIZE = MAXBUFLEN;
 
-static constexpr char FREQ_SYNC_STRING[] = "FREQ_SYNC";
-static constexpr char FREQ_OUTER_STRING[] = "FREQ_OUTER";
-static constexpr char FREQ_OUT1_STRING[] = "FREQ_OUT1";
-static constexpr char FREQ_OUT2_STRING[] = "FREQ_OUT2";
+static constexpr char FREQ_SYNC_MEASURE_STRING[] = "FREQ_SYNC_MEASURE";
+static constexpr char FREQ_OUTER_MEASURE_STRING[] = "FREQ_OUTER_MEASURE";
+static constexpr char FREQ_OUT1_MEASURE_STRING[] = "FREQ_OUT1_MEASURE";
+static constexpr char FREQ_OUT2_MEASURE_STRING[] = "FREQ_OUT2_MEASURE";
 static constexpr char HARMONIC_MULT_STRING[] = "HARMONIC_MULT";
+static constexpr char FREQUENCY_STRING[] = "FREQUENCY";
 
 class NPChopper : public asynPortDriver {
    public:
@@ -45,9 +46,10 @@ class NPChopper : public asynPortDriver {
 
 
    protected:
-    int freqSyncIndex_;
-    int freqOuterIndex_;
-    int freqOut1Index_;
-    int freqOut2Index_;
+    int freqSyncMeasureIndex_;
+    int freqOuterMeasureIndex_;
+    int freqOut1MeasureIndex_;
+    int freqOut2MeasureIndex_;
     int harmonicMultIndex_;
+    int frequencyIndex_;
 };

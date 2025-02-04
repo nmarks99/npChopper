@@ -1,24 +1,24 @@
 record(ai, "$(P)FreqSync") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_SYNC")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_SYNC_MEASURE")
     field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)FreqOuter") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUTER")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUTER_MEASURE")
     field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)FreqOut1") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT1")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT1_MEASURE")
     field(SCAN, "I/O Intr")
 }
 
 record(ai, "$(P)FreqOut2") {
     field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT2")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQ_OUT2_MEASURE")
     field(SCAN, "I/O Intr")
 }
 
@@ -33,4 +33,15 @@ record(longout, "$(P)HarmonicMultSet") {
     field(DRVH, 15)
     field(DRVL, 1)
     field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))HARMONIC_MULT")
+}
+
+record(longin, "$(P)Frequency") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQUENCY")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)FrequencySet") {
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))FREQUENCY")
 }
