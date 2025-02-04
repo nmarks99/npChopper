@@ -63,14 +63,16 @@ static void poll_thread_C(void *pPvt) {
     pNPChopper->poll();
 }
 
-NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
+NPChopper::NPChopper(const char *asyn_port, int poll_period_ms)
     : asynPortDriver(asyn_port, MAX_CONTROLLERS,
                      asynInt32Mask | asynFloat64Mask | asynDrvUserMask | asynOctetMask | asynInt32ArrayMask,
                      asynInt32Mask | asynFloat64Mask | asynOctetMask | asynInt32ArrayMask,
                      ASYN_MULTIDEVICE | ASYN_CANBLOCK,
                      1, /* ASYN_CANBLOCK=0, ASYN_MULTIDEVICE=1, autoConnect=1 */
-                     0, 0),
-      poll_time_(DEFAULT_POLL_TIME) {
+                     0, 0)
+    {
+
+    poll_period_ = poll_period_ms / 1000.0;
 
     // HidSetLogging(true); // logs messages to ChopperLib.txt
     // Connect to device, panic if not found
@@ -100,7 +102,7 @@ NPChopper::NPChopper(const char *asyn_port, const char *usb_port)
 
     // Get device info
     writeReadController("IDN?");
-    printf("Device Identity: %s\n", in_buff_);
+    printf("Device Found: %s\n", in_buff_);
 
     epicsThreadCreate("NPChopperPoller", epicsThreadPriorityLow,
                       epicsThreadGetStackSize(epicsThreadStackMedium), (EPICSTHREADFUNC)poll_thread_C, this);
@@ -213,7 +215,7 @@ void NPChopper::poll() {
 
         callParamCallbacks();
         unlock();
-        epicsThreadSleep(poll_time_);
+        epicsThreadSleep(poll_period_);
     }
 }
 
@@ -241,11 +243,6 @@ asynStatus NPChopper::writeInt32(asynUser *pasynUser, epicsInt32 value) {
         comm_ok = writeController();
     }
 
-    // else if (function == phaseDelayIndex_) {
-    //     snprintf(out_buff_, IO_BUFFER_SIZE, "PHS%d", value);
-    //     comm_ok = writeController();
-    // }
-
     callParamCallbacks();
     return comm_ok ? asynSuccess : asynError;
 }
@@ -264,18 +261,18 @@ asynStatus NPChopper::writeFloat64(asynUser *pasynUser, epicsFloat64 value) {
 }
 
 // register function for iocsh
-extern "C" int NPChopperConfig(const char *asyn_port_name, const char *robot_ip) {
-    NPChopper *pNPChopper = new NPChopper(asyn_port_name, robot_ip);
+extern "C" int NPChopperConfig(const char *asyn_port_name, int poll_period_ms) {
+    NPChopper *pNPChopper = new NPChopper(asyn_port_name, poll_period_ms);
     pNPChopper = NULL;
     return (asynSuccess);
 }
 
-static const iocshArg NPChopperArg0 = {"Asyn port name", iocshArgString};
-static const iocshArg NPChopperArg1 = {"USB port name", iocshArgString};
+static const iocshArg NPChopperArg0 = {"asyn port name", iocshArgString};
+static const iocshArg NPChopperArg1 = {"Poll period (ms)", iocshArgInt};
 static const iocshArg *const NPChopperArgs[2] = {&NPChopperArg0, &NPChopperArg1};
 static const iocshFuncDef NPChopperFuncDef = {"NPChopperConfig", 2, NPChopperArgs};
 
-static void NPChopperCallFunc(const iocshArgBuf *args) { NPChopperConfig(args[0].sval, args[1].sval); }
+static void NPChopperCallFunc(const iocshArgBuf *args) { NPChopperConfig(args[0].sval, args[1].ival); }
 
 void NPChopperRegister(void) { iocshRegister(&NPChopperFuncDef, NPChopperCallFunc); }
 

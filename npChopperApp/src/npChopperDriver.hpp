@@ -8,7 +8,7 @@
 #include "NpChopperLib.h"
 
 constexpr int MAX_CONTROLLERS = 1;
-constexpr double DEFAULT_POLL_TIME = 0.2;  // seconds
+constexpr double DEFAULT_POLL_PERIOD = 0.2; // seconds
 constexpr int IO_BUFFER_SIZE = MAXBUFLEN;
 static constexpr int RETURN_CMD_LENGTH = 3;
 
@@ -27,13 +27,13 @@ static constexpr char MODE_STRING[] = "MODE";
 
 class NPChopper : public asynPortDriver {
    public:
-    NPChopper(const char *asyn_port, const char *usb_port);
+    NPChopper(const char *asyn_port, int poll_period_ms);
     virtual void poll(void);
     virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
     virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
 
    private:
-    double poll_time_;
+    double poll_period_ = DEFAULT_POLL_PERIOD;
     char in_buff_[IO_BUFFER_SIZE];
     char out_buff_[IO_BUFFER_SIZE];
     char device_key_[IO_BUFFER_SIZE];
